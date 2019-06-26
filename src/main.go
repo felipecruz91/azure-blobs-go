@@ -5,13 +5,23 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"runtime"
 	"sync"
 
 	"github.com/Azure/azure-pipeline-go/pipeline"
 	"github.com/Azure/azure-storage-blob-go/azblob"
+	"github.com/gorilla/mux"
 )
+
+type User struct {
+	ID        string `json:"id,omitempty"`
+	Firstname string `json:"firstname,omitempty"`
+	Lastname  string `json:"lastname,omitempty"`
+}
+
+var users []User
 
 // Create a request pipeline using your Storage account's name and account key.
 // accountName, accountKey := accountInfo()
@@ -51,9 +61,7 @@ func process(routineId int, blobURL azblob.BlockBlobURL) {
 	// The downloaded blob data is in downloadData's buffer
 }
 
-func main() {
-
-	runtime.GOMAXPROCS(2)
+func Run(w http.ResponseWriter, req *http.Request) {
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -85,5 +93,23 @@ func main() {
 	wg.Wait()
 
 	fmt.Println("\nTerminating Program")
+
+	w.Write([]byte("OK")) // Write response body
+}
+
+func main() {
+
+	runtime.GOMAXPROCS(2)
+
+	fmt.Println("magic is happening on port 8000")
+
+	//creating local array
+	users = append(users, User{ID: "1", Firstname: "Swanand", Lastname: "Keskar"})
+	users = append(users, User{ID: "2", Firstname: "Akshay", Lastname: "Joshi"})
+
+	router := mux.NewRouter()
+	router.HandleFunc("/run", Run).Methods("GET")
+
+	log.Fatal(http.ListenAndServe(":8000", router))
 
 }
